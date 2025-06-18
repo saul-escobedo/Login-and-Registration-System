@@ -1,6 +1,8 @@
 //FIXME: Try implementing  2D array for name and password assossiatied with the name.
 // Vector is better ; it can change in size.
 
+#include <cstddef>
+#include <cstdio>
 #include <fstream>
 #include <ios>
 #include <iostream>
@@ -10,6 +12,7 @@
 void Display();
 void Register(std::string name, int password);
 void Login(std::string name, int password);
+void clearScreen() { std::cout << "\033[2J";}
 
 int main() {
 
@@ -50,8 +53,8 @@ void Display() {
 }
 
 void Login(std::string name, int password) {
-  std::string new_Name;
-	int new_Password;
+  std::string file_Name;
+	int file_Password;
 
     std::ifstream my_file("RegistrationInfo.txt");
     if (!my_file.is_open()) {
@@ -60,13 +63,22 @@ void Login(std::string name, int password) {
     std::string line;
 
     while (std::getline(my_file, line)) {
-        int count = 0; // Count # of loops to know what is name and password.
-        std::istringstream iss(line);
+      std::istringstream iss(line);
 
-        std::string word;
-            iss >> name >> password;
-            std::cout << "Name: " << name << std::endl;
-            std::cout << "Password: " << password << std::endl;
+      std::string word;
+
+      iss >> file_Name >> file_Password;
+      size_t commaPos = line.find(',');
+      if (commaPos != std::string::npos) {
+        file_Name = line.substr(0, commaPos);
+      }
+      if (name != file_Name || password != file_Password) {
+        std::cout << "Error. Incorrect name or password." << std::endl;
+      }
+      else {
+        clearScreen();
+        std::cout << "Welcome back " << name << "!" << std::endl;
+      }
     }
     my_file.close();
 }

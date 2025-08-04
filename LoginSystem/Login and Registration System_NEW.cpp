@@ -60,26 +60,27 @@ void Login(std::string name, std::string password) {
     std::cout << "Error opening file.";
   }
   std::string line;
+  bool is_Authenticated = false;
 
   while (std::getline(my_file, line)) {
     std::istringstream iss(line);
 
-    std::string word;
-
-    iss >> file_Name >> file_Password;
-
     size_t commaPos = line.find(',');
     if (commaPos != std::string::npos) {
       file_Name = line.substr(0, commaPos);
-      file_Password = line.substr(commaPos + 1);
+      file_Password = line.substr(commaPos + 2);
     }
-    if (name != file_Name || password != file_Password) {
-      std::cout << "Error. Incorrect name or password." << std::endl;
-    } else {
+
+    if (name == file_Name && password == file_Password) {
       clearScreen();
       std::cout << "Welcome back " << name << "!" << std::endl;
+      is_Authenticated = true;
+      break;
     }
   }
+  if (!is_Authenticated) {
+    std::cout << "Error. Incorrect name or password." << std::endl;}
+
   my_file.close();
 }
 

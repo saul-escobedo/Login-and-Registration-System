@@ -21,7 +21,6 @@ class HouseInfo {
     void print() {
       cout << left << setw(15) << style << setw(10) << Num_Of_Bedrooms << setw(10) << Num_Of_Bathrooms << setw(10) << Num_Of_Cars_Garage << setw(10) << Year_Built << setw(10) << Finished_Square_Footage << setw(10) << Price << setw(10) << Tax << endl;
     }
-    void ReadFile();
     void static loadHouse(HouseInfo houses[], int arrayZise, string file);
 
     //Setters
@@ -54,25 +53,6 @@ HouseInfo::HouseInfo(string style, int Num_Of_Bedrooms, int Num_Of_Bathrooms, in
   this->Finished_Square_Footage = Finished_Square_Footage;
   this->Price = Price;
   this->Tax = Tax;
-}
-
-void HouseInfo::ReadFile() {
-  string line;
-
-  ifstream MyFile("HouseInfo.txt",ios::out);
-  if(!MyFile.is_open()) {
-    cout << "<><> Error Opening File <><> \n";
-  }
-
-  while(getline(MyFile, line)) {
-    istringstream iss(line);
-    string var1;
-    int var2, var3, var4, var5, var6;
-    double var7, var8;
-
-    iss >> var1 >> var2 >> var3 >> var4 >> var5 >> var6 >> var7 >> var8;
-  }
-
 }
 
 void HouseInfo::loadHouse(HouseInfo *houses, int arrayZise, string file) {

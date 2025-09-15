@@ -19,6 +19,8 @@ class HouseInfo {
     string style;
     int Num_Of_Bedrooms, Num_Of_Bathrooms, Num_Of_Cars_Garage, Year_Built, Finished_Square_Footage;
     double Price, Tax;
+    void static sortByPrice(HouseInfo houses[], int arraySize, string file);
+
 
 
   public:
@@ -28,7 +30,10 @@ class HouseInfo {
       cout << left << setw(15) << style << setw(10) << Num_Of_Bedrooms << setw(10) << Num_Of_Bathrooms << setw(10) << Num_Of_Cars_Garage << setw(10) << Year_Built << setw(10) << Finished_Square_Footage << setw(10) << Price << setw(10) << Tax << endl;
     }
     void static loadHouse(HouseInfo houses[], int arrayZise, string file);
-    void static searchByPrice(HouseInfo houses[], int arraySize, string file, double target);
+    void static searchByPriceLinear(HouseInfo houses[], int arraySize, string file, double target);
+    void static searchByPriceBinary(HouseInfo houses[], int arraySize, string file, double target);
+
+
 
     //Setters
     void setStyle(string sty) {style = sty;}
@@ -102,7 +107,7 @@ void HouseInfo::loadHouse(HouseInfo *houses, int arrayZise, string file) {
   }
 }
 
-void HouseInfo::searchByPrice(HouseInfo *houses, int arraySize, string file, double target) {
+void HouseInfo::searchByPriceLinear(HouseInfo *houses, int arraySize, string file, double target) {
   bool found = false;
   double tolerance = 10000;     //e.g. +- 5,000
 
@@ -119,6 +124,28 @@ void HouseInfo::searchByPrice(HouseInfo *houses, int arraySize, string file, dou
 
 }
 
+void HouseInfo::searchByPriceBinary(HouseInfo *houses, int arraySize, string file, double target) {
+  int low = 0, high = arraySize - 1;
+
+  while (low <= high) {
+    int mid = low + (high - low) / 2;
+
+    if (houses[mid].getPrice() == target) {
+      return houses[mid].print();
+    }
+    if (houses[mid].getPrice() < target) {
+      low = mid + 1;
+    }
+    else {
+      high = mid - 1;
+    }
+  }
+}
+
+void HouseInfo::sortByPrice(HouseInfo *houses, int arraySize, string file) {
+
+}
+
 int main() {
   int choice;
   const int SIZE = 7;
@@ -129,7 +156,8 @@ int main() {
 
   cout << "<><> What would you like to do <><>\n\n";
   cout << "1. Print all available houses\n";
-  cout << "2. Search for a house by PRICE\n";
+  cout << "2. Search for a house by PRICE using LINEAR\n";
+  cout << "3. Seach for a house by PRICE using BINARY\n";
   cout << "Enter Choice: ";
   cin >> choice;
 
@@ -144,8 +172,12 @@ int main() {
     double userPrice;
     cout << "Enter the price you want to search for: ";
     cin >> userPrice;
-    HouseInfo::searchByPrice(Houses, SIZE, "HouseInfo.txt", userPrice);
+    HouseInfo::searchByPriceLinear(Houses, SIZE, "HouseInfo.txt", userPrice);
     break;
+  case 3:
+    cout << "Enter the price you want to search for: ";
+    cin >> userPrice;
+
   default:
     cout << "Not a valid choice." << endl;
   }

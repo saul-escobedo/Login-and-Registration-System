@@ -1,3 +1,9 @@
+/*
+Group #2
+Group Members: Saul Escobedo, Kirah Douglas, Luna Espino
+Project 1: Classes
+*/
+
 #include <ios>
 #include <iostream>
 #include <iomanip>
@@ -22,6 +28,7 @@ class HouseInfo {
       cout << left << setw(15) << style << setw(10) << Num_Of_Bedrooms << setw(10) << Num_Of_Bathrooms << setw(10) << Num_Of_Cars_Garage << setw(10) << Year_Built << setw(10) << Finished_Square_Footage << setw(10) << Price << setw(10) << Tax << endl;
     }
     void static loadHouse(HouseInfo houses[], int arrayZise, string file);
+    void static searchByPrice(HouseInfo houses[], int arraySize, string file, double target);
 
     //Setters
     void setStyle(string sty) {style = sty;}
@@ -43,7 +50,15 @@ class HouseInfo {
     double getTax() {return Tax;}
 };
 
-HouseInfo::HouseInfo(string style, int Num_Of_Bedrooms, int Num_Of_Bathrooms, int Num_Of_Cars_Garage, int Year_Built, int Finished_Square_Footage, double Price, double Tax)
+HouseInfo::HouseInfo(
+  string style,
+  int Num_Of_Bedrooms,
+  int Num_Of_Bathrooms,
+  int Num_Of_Cars_Garage,
+  int Year_Built,
+  int Finished_Square_Footage,
+  double Price,
+  double Tax)
 {
   this->style = style;
   this->Num_Of_Bedrooms = Num_Of_Bedrooms;
@@ -58,7 +73,7 @@ HouseInfo::HouseInfo(string style, int Num_Of_Bedrooms, int Num_Of_Bathrooms, in
 void HouseInfo::loadHouse(HouseInfo *houses, int arrayZise, string file) {
   string line;
 
-  ifstream MyFile(file, ios::out);
+  ifstream MyFile(file);
   if(!MyFile.is_open()) {
     cout << "<><> Error Opening File <><> \n";
   }
@@ -80,7 +95,6 @@ void HouseInfo::loadHouse(HouseInfo *houses, int arrayZise, string file) {
     houses[i].Finished_Square_Footage = var6;
     houses[i].Price = var7;
     houses[i].Tax = var8;
-    houses[i].print();
 
     i++;
 
@@ -88,11 +102,55 @@ void HouseInfo::loadHouse(HouseInfo *houses, int arrayZise, string file) {
   }
 }
 
-int main() {
-  HouseInfo Houses[7];
+void HouseInfo::searchByPrice(HouseInfo *houses, int arraySize, string file, double target) {
+  bool found = false;
+  double tolerance = 10000;     //e.g. +- 5,000
 
-  cout << left << setw(15) << "House Style" << setw(10) << "Bed Rms" << setw(10) << "Bath Rms" << setw(10) << "Garage"<< setw(10) << "Year" << setw(10) << "Area" << setw(10) << "Price" << setw(10) << "Tax Paid" << endl;
-  HouseInfo::loadHouse(Houses, 7, "HouseInfo.txt");
+  for (int i = 0; i < arraySize; ++i) {
+    if (std::abs(houses[i].getPrice() - target) <= tolerance) {
+        houses[i].print();
+        found = true;
+    }
+
+  }
+  if (!found) {
+    cout << "No house found with price <> " << target << " <>\n";
+  }
+
+}
+
+int main() {
+  int choice;
+  const int SIZE = 7;
+  HouseInfo Houses[SIZE];
+
+  HouseInfo::loadHouse(Houses, SIZE, "HouseInfo.txt");    //Loads once all houses
+
+
+  cout << "<><> What would you like to do <><>\n\n";
+  cout << "1. Print all available houses\n";
+  cout << "2. Search for a house by PRICE\n";
+  cout << "Enter Choice: ";
+  cin >> choice;
+
+  switch (choice) {
+  case 1:
+    cout << left << setw(15) << "House Style" << setw(10) << "Bed Rms" << setw(10) << "Bath Rms" << setw(10) << "Garage"<< setw(10) << "Year" << setw(10) << "Area" << setw(10) << "Price" << setw(10) << "Tax Paid" << endl;
+    for (int i = 0; i < SIZE; i++) {
+      Houses[i].print();
+    }
+    break;
+  case 2:
+    double userPrice;
+    cout << "Enter the price you want to search for: ";
+    cin >> userPrice;
+    HouseInfo::searchByPrice(Houses, SIZE, "HouseInfo.txt", userPrice);
+    break;
+  default:
+    cout << "Not a valid choice." << endl;
+  }
+
+
 
   return 0;
 

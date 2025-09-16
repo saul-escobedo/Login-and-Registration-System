@@ -19,7 +19,7 @@ class HouseInfo {
     string style;
     int Num_Of_Bedrooms, Num_Of_Bathrooms, Num_Of_Cars_Garage, Year_Built, Finished_Square_Footage;
     double Price, Tax;
-    void static sortByPrice(HouseInfo houses[], int arraySize, string file);
+    void static sortByPrice(HouseInfo houses[], int arraySize);
 
 
 
@@ -31,8 +31,9 @@ class HouseInfo {
     }
     void static loadHouse(HouseInfo houses[], int arrayZise, string file);
     void static searchByPriceLinear(HouseInfo houses[], int arraySize, string file, double target);
-    void static searchByPriceBinary(HouseInfo houses[], int arraySize, string file, double target);
-
+    void static searchByPriceBinary(HouseInfo houses[], int arraySize, double target);
+    void static sortByTaxBubble(HouseInfo houses[], int arraySize);
+    void static sortByTaxInsertion(HouseInfo houses[], int arraySize);
 
 
     //Setters
@@ -124,7 +125,8 @@ void HouseInfo::searchByPriceLinear(HouseInfo *houses, int arraySize, string fil
 
 }
 
-void HouseInfo::searchByPriceBinary(HouseInfo *houses, int arraySize, string file, double target) {
+void HouseInfo::searchByPriceBinary(HouseInfo *houses, int arraySize, double target) {
+  sortByPrice(houses, arraySize);
   int low = 0, high = arraySize - 1;
 
   while (low <= high) {
@@ -142,7 +144,43 @@ void HouseInfo::searchByPriceBinary(HouseInfo *houses, int arraySize, string fil
   }
 }
 
-void HouseInfo::sortByPrice(HouseInfo *houses, int arraySize, string file) {
+void HouseInfo::sortByPrice(HouseInfo *houses, int arraySize) {
+  bool swapped;
+  for (int i = 0; i < arraySize - 1; i++) {
+    swapped = false;
+    for (int j = 0; j < arraySize - i - 1; j++) {
+      if (houses[j].getPrice() > houses[j + 1].getPrice()) {
+        HouseInfo temp = houses[j];
+        houses[j] = houses[j + 1];
+        houses[j + 1] = temp;
+        swapped = true;
+      }
+    }
+    if (!swapped) {
+      break;
+    }
+  }
+}
+
+void HouseInfo::sortByTaxBubble(HouseInfo *houses, int arraySize) {
+  bool swapped;
+  for (int i = 0; i < arraySize - 1; i++) {
+    swapped = false;
+    for (int j = 0; j < arraySize - i - 1; j++) {
+      if (houses[j].getTax() > houses[j + 1].getTax()) {
+        HouseInfo temp = houses[j];
+        houses[j] = houses[j + 1];
+        houses[j + 1] = temp;
+        swapped = true;
+      }
+    }
+    if (!swapped) {
+      break;
+    }
+  }
+}
+
+void HouseInfo::sortByTaxInsertion(HouseInfo *houses, int arraySize) {
 
 }
 
@@ -157,7 +195,9 @@ int main() {
   cout << "<><> What would you like to do <><>\n\n";
   cout << "1. Print all available houses\n";
   cout << "2. Search for a house by PRICE using LINEAR\n";
-  cout << "3. Seach for a house by PRICE using BINARY\n";
+  cout << "3. Search for a house by PRICE using BINARY\n";
+  cout << "4. Print sorted houses by TAX using BUBBLE sort\n";
+  cout << "5. Print sorted houses by TAX using INSERTION sort\n";
   cout << "Enter Choice: ";
   cin >> choice;
 
@@ -177,6 +217,15 @@ int main() {
   case 3:
     cout << "Enter the price you want to search for: ";
     cin >> userPrice;
+    HouseInfo::searchByPriceBinary(Houses, SIZE, userPrice);
+    break;
+  case 4:
+    HouseInfo::sortByTaxBubble(Houses, SIZE);
+    cout << left << setw(15) << "House Style" << setw(10) << "Bed Rms" << setw(10) << "Bath Rms" << setw(10) << "Garage"<< setw(10) << "Year" << setw(10) << "Area" << setw(10) << "Price" << setw(10) << "Tax Paid" << endl;
+    for (int i = 0; i < SIZE; i++) {
+      Houses[i].print();
+    }
+    break;
 
   default:
     cout << "Not a valid choice." << endl;

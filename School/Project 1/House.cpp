@@ -159,7 +159,7 @@ void HouseInfo::sortByPrice(HouseInfo *houses, int arraySize) {
     if (!swapped) {
       break;
     }
-  }
+  }                   //Sorts by Price
 }
 
 void HouseInfo::sortByTaxBubble(HouseInfo *houses, int arraySize) {
@@ -177,11 +177,24 @@ void HouseInfo::sortByTaxBubble(HouseInfo *houses, int arraySize) {
     if (!swapped) {
       break;
     }
-  }
+  }               //Sorts Houses by Bubble Sort
 }
 
 void HouseInfo::sortByTaxInsertion(HouseInfo *houses, int arraySize) {
+  int i = 0, j = 0;
+  HouseInfo temp;           //temp variable used for swap
 
+  for (i = 1; i < arraySize; ++i) {
+    j = i;
+    while (j > 0 && houses[j].getTax() < houses[j - 1].getTax()) {
+      temp = houses[j];
+      houses[j] = houses[j - 1];
+      houses[j - 1] = temp;
+      --j;
+
+    }
+
+  }           // Sorts Houses By Insertion Sort
 }
 
 int main() {
@@ -189,7 +202,7 @@ int main() {
   const int SIZE = 7;
   HouseInfo Houses[SIZE];
 
-  HouseInfo::loadHouse(Houses, SIZE, "HouseInfo.txt");    //Loads once all houses
+  HouseInfo::loadHouse(Houses, SIZE, "HouseInfo.txt");    //Loads all houses once
 
 
   cout << "<><> What would you like to do <><>\n\n";
@@ -226,7 +239,13 @@ int main() {
       Houses[i].print();
     }
     break;
-
+  case 5:
+    HouseInfo::sortByTaxInsertion(Houses, SIZE);
+    cout << left << setw(15) << "House Style" << setw(10) << "Bed Rms" << setw(10) << "Bath Rms" << setw(10) << "Garage"<< setw(10) << "Year" << setw(10) << "Area" << setw(10) << "Price" << setw(10) << "Tax Paid" << endl;
+    for (int i = 0; i < SIZE; i++) {
+      Houses[i].print();
+    }
+    break;
   default:
     cout << "Not a valid choice." << endl;
   }

@@ -1,4 +1,7 @@
-//Add function to delete user.
+//
+// Make function to create table
+// Make function to add and delete users.
+//
 #include <cstddef>
 #include <cstdio>
 #include <fstream>
@@ -8,25 +11,59 @@
 #include <sstream>
 #include <string> // Use to_string & getline()
 #include <cstdio> // To use remove and rename in Delete_User() funct.
+#include <sqlite3.h>
 
-void Display();
-void Register(std::string name, std::string password);
-void Login(std::string name, std::string password);
+void create_table(sqlite3* DB);
+void Display(sqlite3* DB);
+bool Register(sqlite3* DB, const std::string name, int password);
+// void Login(std::string name, std::string password);
 void clearScreen() { std::cout << "\033[2J"; }
 void Delete_User(std::string nameToDelete);
 
-int main() {
 
-  Display();
+
+int main() {
+    sqlite3* DB;
+    int error_code = sqlite3_open("users.db",&DB);
+
+    if (error_code) {
+        std::cerr << "Error opening database: " << sqlite3_errmsg(DB) << std::endl;
+        return -1;
+    } else {
+        std::cout << "Opened database successfully!" << std::endl;
+    }
+
+    create_table(DB);
+
+
+
+  Display(DB);
 
   return 0;
 }
 
-void Display() {
-  int choice;
-  std::string name, password;
+void create_table(sqlite3* DB) {
+    int error_code = sqlite3_open("users.db",&DB);
 
-  std::cout << "1. Login\n";
+    const char* table = "CREATE TABLE IF NOT EXISTS users ("
+                        "name TEXT NOT NULL, "
+                        "password INT NOT NULL);";
+    char* message_error;
+     error_code = sqlite3_exec(DB, table, NULL, 0, NULL);
+     if (error_code != SQLITE_OK) {
+         std::cerr << "Error Creating Table" << sqlite3_errmsg(DB) << std::endl;
+     } else {
+         std::cout << "Table Created Successfully" << std::endl;
+     }
+
+}
+
+void Display(sqlite3* DB) {
+  int choice;
+  std::string name;
+  int password;
+
+  // std::cout << "1. Login\n";
   std::cout << "2. Register\n";
   std::cout << "3. Delete User\n";
   std::cout << "Welcome, please enter your choice: ";
@@ -39,15 +76,15 @@ void Display() {
     std::cout << "Enter your name: ";
     std::getline(std::cin, name);
     std::cout << "Enter your password: ";
-    std::getline(std::cin, password);
-    Login(name, password);
+    std::cin >> password;
+    // Login(name, password);
     break;
   case 2:
     std::cout << "Enter your name: ";
     std::getline(std::cin, name);
     std::cout << "Enter your password: ";
-    std::getline(std::cin, password);
-    Register(name, password);
+    std::cin >> password;
+    Register(DB, name, password);
     break;
   case 3:
     std::cout << "Enter name of user you want to delete [<>] : ";
@@ -59,47 +96,59 @@ void Display() {
   }
 }
 
-void Login(std::string name, std::string password) {
-  std::string file_Name, file_Password;
+// void Login(std::string name, std::string password) {
+//   std::string file_Name, file_Password;
 
-  std::ifstream my_file("RegistrationInfo.txt");
-  if (!my_file.is_open()) {
-    std::cout << "Error opening file.";
-  }
-  std::string line;
-  bool is_Authenticated = false;
+//   std::ifstream my_file("RegistrationInfo.txt");
+//   if (!my_file.is_open()) {
+//     std::cout << "Error opening file.";
+//   }
+//   std::string line;
+//   bool is_Authenticated = false;
 
-  while (std::getline(my_file, line)) {
-    std::istringstream iss(line);
+//   while (std::getline(my_file, line)) {
+//     std::istringstream iss(line);
 
-    size_t commaPos = line.find(',');
-    if (commaPos != std::string::npos) {
-      file_Name = line.substr(0, commaPos);
-      file_Password = line.substr(commaPos + 2);
+//     size_t commaPos = line.find(',');
+//     if (commaPos != std::string::npos) {
+//       file_Name = line.substr(0, commaPos);
+//       file_Password = line.substr(commaPos + 2);
+//     }
+
+//     if (name == file_Name && password == file_Password) {
+//       clearScreen();
+//       std::cout << "Welcome back " << name << "!" << std::endl;
+//       is_Authenticated = true;
+//       break;
+//     }
+//   }
+//   if (!is_Authenticated) {
+//     std::cout << "Error. Incorrect name or password." << std::endl;}
+
+//   my_file.close();
+// }
+
+bool Register(sqlite3* DB, const std::string name, int password) {
+    sqlite3_stmt *stmt;
+    const char *insertSQL = "INSERT INTO users (name, password) VALUES (?, ?);";
+
+    if (sqlite3_prepare_v2(DB, insertSQL, -1, &stmt, nullptr) != SQLITE_OK) {
+        std::cerr << "Prepare failed: " << sqlite3_errmsg(DB) << "\n";
+        sqlite3_close(DB);
+        return false;
     }
 
-    if (name == file_Name && password == file_Password) {
-      clearScreen();
-      std::cout << "Welcome back " << name << "!" << std::endl;
-      is_Authenticated = true;
-      break;
+    sqlite3_bind_text(stmt, 1, name.c_str(), -1, nullptr);
+    sqlite3_bind_int(stmt, 2, password);
+
+    if (sqlite3_step(stmt) != SQLITE_DONE) {
+        std::cerr << "Insert failed: " << sqlite3_errmsg(DB) << "\n";
+        sqlite3_finalize(stmt);
+        return false;
     }
-  }
-  if (!is_Authenticated) {
-    std::cout << "Error. Incorrect name or password." << std::endl;}
 
-  my_file.close();
-}
-
-void Register(std::string name, std::string password) {
-  std::ofstream my_file("RegistrationInfo.txt", std::ios::app);
-  if (!my_file.is_open()) {
-    std::cout << "Error opening file" << std::endl;
-  }
-
-  my_file << name << ", " << password << std::endl;
-
-  my_file.close();
+    sqlite3_finalize(stmt);
+    return true;
 }
 
 void Delete_User(std::string nameToDelete) {

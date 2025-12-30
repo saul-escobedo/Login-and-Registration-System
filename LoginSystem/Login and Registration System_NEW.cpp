@@ -2,63 +2,70 @@
 // Make function to create table
 // Make function to add and delete users.
 //
+// Start thinking about being more intentional in youur project.
+// How are you designing it and why?
+//
+// TODO: Make an README file or add a description in your project repository of
+// - What the project is about, what it is.
+// - What did i use to make the project
+// TODO: Start thinking of how to make the GUI.
+//
+// I want to continue working on this project. I want it to turn into a web
+// application.
+//
 #include <cstddef>
 #include <cstdio>
+#include <cstdio> // To use remove and rename in Delete_User() funct.
 #include <fstream>
 #include <ios>
 #include <iostream>
 #include <limits>
-#include <sstream>
-#include <string> // Use to_string & getline()
-#include <cstdio> // To use remove and rename in Delete_User() funct.
 #include <sqlite3.h>
+#include <string> // Use to_string & getline()
 
-void create_table(sqlite3* DB);
-void Display(sqlite3* DB);
-bool Register(sqlite3* DB, const std::string name, int password);
+void create_table(sqlite3 *DB);
+void Display(sqlite3 *DB);
+bool Register(sqlite3 *DB, const std::string name, int password);
 // void Login(std::string name, std::string password);
 void clearScreen() { std::cout << "\033[2J"; }
-void Delete_User(std::string nameToDelete);
-
-
+bool Delete_User(sqlite3 *DB, std::string nameToDelete);
 
 int main() {
-    sqlite3* DB;
-    int error_code = sqlite3_open("users.db",&DB);
+  sqlite3 *DB;
+  int error_code = sqlite3_open("users.db", &DB);
 
-    if (error_code) {
-        std::cerr << "Error opening database: " << sqlite3_errmsg(DB) << std::endl;
-        return -1;
-    } else {
-        std::cout << "Opened database successfully!" << std::endl;
-    }
+  if (error_code) {
+    std::cerr << "Error opening database: " << sqlite3_errmsg(DB) << std::endl;
+    return -1;
+  } else {
+    std::cout << "Opened database successfully!" << std::endl;
+  }
 
-    create_table(DB);
-
-
+  create_table(DB);
 
   Display(DB);
+
+  sqlite3_close(DB);
 
   return 0;
 }
 
-void create_table(sqlite3* DB) {
-    int error_code = sqlite3_open("users.db",&DB);
+void create_table(sqlite3 *DB) {
+  int error_code = sqlite3_open("users.db", &DB);
 
-    const char* table = "CREATE TABLE IF NOT EXISTS users ("
-                        "name TEXT NOT NULL, "
-                        "password INT NOT NULL);";
-    char* message_error;
-     error_code = sqlite3_exec(DB, table, NULL, 0, NULL);
-     if (error_code != SQLITE_OK) {
-         std::cerr << "Error Creating Table" << sqlite3_errmsg(DB) << std::endl;
-     } else {
-         std::cout << "Table Created Successfully" << std::endl;
-     }
-
+  const char *table = "CREATE TABLE IF NOT EXISTS users ("
+                      "name TEXT NOT NULL, "
+                      "password INT NOT NULL);";
+  char *message_error;
+  error_code = sqlite3_exec(DB, table, NULL, 0, NULL);
+  if (error_code != SQLITE_OK) {
+    std::cerr << "Error Creating Table" << sqlite3_errmsg(DB) << std::endl;
+  } else {
+    std::cout << "Table Created Successfully" << std::endl;
+  }
 }
 
-void Display(sqlite3* DB) {
+void Display(sqlite3 *DB) {
   int choice;
   std::string name;
   int password;
@@ -89,7 +96,12 @@ void Display(sqlite3* DB) {
   case 3:
     std::cout << "Enter name of user you want to delete [<>] : ";
     std::getline(std::cin, name);
-    Delete_User(name);
+    if (Delete_User(DB, name)) {
+      std::cout << "User deleted successfully\n";
+    } else {
+      std::cout << "Use not found or delete failed\n";
+    }
+
     break;
   default:
     std::cout << "That is not a valid choice." << std::endl;
@@ -128,54 +140,48 @@ void Display(sqlite3* DB) {
 //   my_file.close();
 // }
 
-bool Register(sqlite3* DB, const std::string name, int password) {
-    sqlite3_stmt *stmt;
-    const char *insertSQL = "INSERT INTO users (name, password) VALUES (?, ?);";
+bool Register(sqlite3 *DB, const std::string name, int password) {
+  sqlite3_stmt *stmt;
+  const char *insertSQL = "INSERT INTO users (name, password) VALUES (?, ?);";
 
-    if (sqlite3_prepare_v2(DB, insertSQL, -1, &stmt, nullptr) != SQLITE_OK) {
-        std::cerr << "Prepare failed: " << sqlite3_errmsg(DB) << "\n";
-        sqlite3_close(DB);
-        return false;
-    }
+  if (sqlite3_prepare_v2(DB, insertSQL, -1, &stmt, nullptr) != SQLITE_OK) {
+    std::cerr << "Prepare failed: " << sqlite3_errmsg(DB) << "\n";
+    sqlite3_close(DB);
+    return false;
+  }
 
-    sqlite3_bind_text(stmt, 1, name.c_str(), -1, nullptr);
-    sqlite3_bind_int(stmt, 2, password);
+  sqlite3_bind_text(stmt, 1, name.c_str(), -1, nullptr);
+  sqlite3_bind_int(stmt, 2, password);
 
-    if (sqlite3_step(stmt) != SQLITE_DONE) {
-        std::cerr << "Insert failed: " << sqlite3_errmsg(DB) << "\n";
-        sqlite3_finalize(stmt);
-        return false;
-    }
-
+  if (sqlite3_step(stmt) != SQLITE_DONE) {
+    std::cerr << "Insert failed: " << sqlite3_errmsg(DB) << "\n";
     sqlite3_finalize(stmt);
-    return true;
+    return false;
+  }
+
+  sqlite3_finalize(stmt);
+  return true;
 }
 
-void Delete_User(std::string nameToDelete) {
-  std::ifstream inFile("RegistrationInfo.txt");
-  std::ofstream outFile("temp.txt");
+bool Delete_User(sqlite3 *DB, std::string nameToDelete) {
+  const char *sql = "DELETE FROM users WHERE name = ?;";
 
-  if (!inFile || !outFile) {
-    std::cout << "<> Error Opening Files <> \n";
+  sqlite3_stmt *stmt;
+  if (sqlite3_prepare_v2(DB, sql, -1, &stmt, nullptr) != SQLITE_OK) {
+    std::cerr << "Prepare failed: " << sqlite3_errmsg(DB) << '\n';
+    return false;
   }
-  std::string line;
-  bool deleted = false;
 
-  while (getline(inFile, line)) {
-    size_t commaPos = line.find(',');
-    std::string username = line.substr(0, commaPos);
+  sqlite3_bind_text(stmt, 1, nameToDelete.c_str(), -1,
+                    SQLITE_TRANSIENT); // Bind nameToDelete to the SQL statement
 
-    if (username != nameToDelete) {
-      outFile << line << std::endl;
-    } else { deleted = true; }
+  if (sqlite3_step(stmt) != SQLITE_DONE) {
+    std::cerr << "Delete failed: " << sqlite3_errmsg(DB) << '\n';
+    sqlite3_finalize(stmt);
+    return false;
   }
-  inFile.close();
-  outFile.close();
 
-  std::remove("RegistrationInfo.txt");
-  std::rename("temp.txt", "RegistrationInfo.txt");
-
-  if (deleted) {
-    std::cout << "<> User [" << nameToDelete << "] deleted sucessfully <>" << std::endl;
-  } else { std::cout << "User not found\n";}
+  int rows_affected = sqlite3_changes(DB);
+  sqlite3_finalize(stmt);
+  return rows_affected > 0;
 }

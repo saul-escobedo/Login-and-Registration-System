@@ -16,7 +16,6 @@
 #include <cstddef>
 #include <cstdio>
 #include <cstdio> // To use remove and rename in Delete_User() funct.
-#include <fstream>
 #include <ios>
 #include <iostream>
 #include <limits>
@@ -25,10 +24,12 @@
 
 void create_table(sqlite3 *DB);
 void Display(sqlite3 *DB);
-bool Register(sqlite3 *DB, const std::string name, int password);
+bool Register(sqlite3 *DB, const std::string name, const std::string& password);
+bool Register(sqlite3 *DB, const std::string& name, const std::string& password, const std::string& role);
 // void Login(std::string name, std::string password);
 void clearScreen() { std::cout << "\033[2J"; }
 bool Delete_User(sqlite3 *DB, std::string nameToDelete);
+bool is_Admin(sqlite3 *DB, std::string &name); // To check if a user is admin or not
 
 int main() {
   sqlite3 *DB;
@@ -55,7 +56,10 @@ void create_table(sqlite3 *DB) {
 
   const char *table = "CREATE TABLE IF NOT EXISTS users ("
                       "name TEXT NOT NULL, "
-                      "password INT NOT NULL);";
+                      "password INT NOT NULL, "
+                      "role TEXT NOT NULL DEFAULT 'user', "
+                      "created_at TEXT DEFAULT CURRENT_TIMESTAMP);";
+
   char *message_error;
   error_code = sqlite3_exec(DB, table, NULL, 0, NULL);
   if (error_code != SQLITE_OK) {
@@ -67,8 +71,7 @@ void create_table(sqlite3 *DB) {
 
 void Display(sqlite3 *DB) {
   int choice;
-  std::string name;
-  int password;
+  std::string name, password;
 
   // std::cout << "1. Login\n";
   std::cout << "2. Register\n";
@@ -84,14 +87,26 @@ void Display(sqlite3 *DB) {
     std::getline(std::cin, name);
     std::cout << "Enter your password: ";
     std::cin >> password;
-    // Login(name, password);
+    // Login(name, password);           //Make it so it automatically detects if
+    // the account is admin or regular user.
     break;
   case 2:
+    // TODO: Make it so you can make a admin account.
+    std::cout << "Is it going to be admin(1) or regular user(2)? ";
+    int choice;
+    std::cin >> choice;
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
     std::cout << "Enter your name: ";
     std::getline(std::cin, name);
     std::cout << "Enter your password: ";
-    std::cin >> password;
-    Register(DB, name, password);
+    std::getline(std::cin, password);
+
+    if (choice == 1) {
+      Register(DB, name, password,"admin");
+    } else {
+      Register(DB, name, password);
+    }
     break;
   case 3:
     std::cout << "Enter name of user you want to delete [<>] : ";
@@ -99,9 +114,8 @@ void Display(sqlite3 *DB) {
     if (Delete_User(DB, name)) {
       std::cout << "User deleted successfully\n";
     } else {
-      std::cout << "Use not found or delete failed\n";
+      std::cout << "User not found or delete failed\n";
     }
-
     break;
   default:
     std::cout << "That is not a valid choice." << std::endl;
@@ -140,18 +154,40 @@ void Display(sqlite3 *DB) {
 //   my_file.close();
 // }
 
-bool Register(sqlite3 *DB, const std::string name, int password) {
+bool Register(sqlite3 *DB, const std::string name, const std::string& password) {
   sqlite3_stmt *stmt;
   const char *insertSQL = "INSERT INTO users (name, password) VALUES (?, ?);";
 
   if (sqlite3_prepare_v2(DB, insertSQL, -1, &stmt, nullptr) != SQLITE_OK) {
     std::cerr << "Prepare failed: " << sqlite3_errmsg(DB) << "\n";
-    sqlite3_close(DB);
     return false;
   }
 
   sqlite3_bind_text(stmt, 1, name.c_str(), -1, nullptr);
-  sqlite3_bind_int(stmt, 2, password);
+  sqlite3_bind_text(stmt, 2, password.c_str(), -1, nullptr);
+
+  if (sqlite3_step(stmt) != SQLITE_DONE) {
+    std::cerr << "Insert failed: " << sqlite3_errmsg(DB) << "\n";
+    sqlite3_finalize(stmt);
+    return false;
+  }
+
+  sqlite3_finalize(stmt);
+  return true;
+}
+
+bool Register(sqlite3 *DB, const std::string& name, const std::string& password, const std::string& role) {
+  sqlite3_stmt *stmt;
+  const char *insertSQL = "INSERT INTO users (name, password, role) VALUES (?, ?, ?);";
+
+  if (sqlite3_prepare_v2(DB, insertSQL, -1, &stmt, nullptr) != SQLITE_OK) {
+    std::cerr << "Prepare failed: " << sqlite3_errmsg(DB) << "\n";
+    return false;
+  }
+
+  sqlite3_bind_text(stmt, 1, name.c_str(), -1, nullptr);
+  sqlite3_bind_text(stmt, 2, password.c_str(), -1, nullptr);
+  sqlite3_bind_text(stmt, 3, role.c_str(), -1, SQLITE_TRANSIENT);
 
   if (sqlite3_step(stmt) != SQLITE_DONE) {
     std::cerr << "Insert failed: " << sqlite3_errmsg(DB) << "\n";
@@ -184,4 +220,22 @@ bool Delete_User(sqlite3 *DB, std::string nameToDelete) {
   int rows_affected = sqlite3_changes(DB);
   sqlite3_finalize(stmt);
   return rows_affected > 0;
+}
+
+bool is_Admin(sqlite3 *DB, std::string &name) {
+  const char *sql = "SELECT role FROM users WHERE name = ?;";
+  sqlite3_stmt *stmt;
+
+  sqlite3_prepare_v2(DB, sql, -1, &stmt, nullptr);
+  sqlite3_bind_text(stmt, 1, name.c_str(), -1, SQLITE_TRANSIENT);
+
+  bool admin = false;
+  if (sqlite3_step(stmt) == SQLITE_ROW) {
+    std::string role =
+        reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
+    admin = (role == "admin");
+  }
+
+  sqlite3_finalize(stmt);
+  return admin;
 }
